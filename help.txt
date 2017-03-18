@@ -1,0 +1,175 @@
+Use
+    nn [PARAMETERS] --mode <mode> [MODE_PARAMETERS]
+
+Description
+    Allows you to create and test a neural network for classification with the 
+    following characteristics:
+      - The outputs are in the range (0,1)
+      - Each layers is fully connected with the follow layer and only to that
+      - The activation function of each unit is the sigmoid function
+        f(x) = 1/(1+e^(-x))
+      - The weights of each unit are initialized randomly in the range 
+        [-0.7,+0.7] except the 0.
+      - Allows an arbitrary number of inputs, outputs and hidden layers with
+        an arbitrary number of units
+    Depending on the mode selected (with parameter --mode) you can:
+      - Create a custom neural network and train it with the back-propagation 
+        algorithm on a dataset passed in csv format (mode training)
+      - Test a neural network, previously created, on a dataset in csv format
+        (mode test)
+    In general, the format of the file containing the dataset must be:
+      id, input[1], ..., input[n], output[1], ..., output[m]
+    where
+      - each row is an instance with a unique identifier id
+      - one instance has n inputs and m outputs
+      - each instance has the same number of inputs and outputs to the others
+    In test mode you can have a dataset without outputs to get the answers by 
+    the neural network.
+
+Parameters
+    --help      Prints this help.
+    --rseed <n> Seed for the random number generator (optional parameter, 
+                default value is the system time); the value <n> must be an 
+                integer number.
+
+Modes
+    --mode <m>  Select the program mode (required parameter).
+                Possible modes (value for <m>) are:
+                 - training : In this mode, you can create a neural network by 
+                     customizing it with different parameters (e.g. the numbers
+                     of units or the number of the hidden layers) and train it
+                     on a dataset. The algorithm of training is the back-
+                     propagation, that you can set with various parameters. You
+                     can also customize the training process.
+                 - test : In test mode you load a neural network from a file 
+                     created in training mode and test it on a dataset. You
+                     can save on file the responses of the neural network for 
+                     each instance of the dataset.
+
+Mode training (--mode training)
+    Required parameters:
+    --inputs <n>  Number of inputs of the neural network. The value <n> must be
+                  an integer greater than 1. 
+    --outputs <n> Number of outputs of the neural network. The value <n> must be
+                  an integer greater than 1.
+    --hlayers <n> Number of hidden layers of the neural network. The value <n> 
+                  must be a positive integer.
+    --units <s>   Number of units for any hidden layer. The values in <s> must
+                  be a list of integer numbers separated by commas (e.g. for 3 
+                  hidden layer could be 5,2,4).
+    --eta <r>     Training rate for back-propagation algorithm. The value <r>
+                  must be a positive real number (generally in the interval
+                  [0,1]).
+    --trfile <s>  File containing the instances of training dataset. The value
+                  <s> must contains one valid path. The file must be in csv
+                  format as described above, with a number of inputs and
+                  outputs identical to those set for the neural network.
+    Optional parameters:
+    --alpha <r>   Momentum rate for back-propagation. The value <r> must be a 
+                  positive real number (generally in the interval [0,1]). The 
+                  default is 0.
+    --lambda <r>  Regularization rate for back-propagation. The value <r> must 
+                  be a positive real number (generally in the interval [0,1]).
+                  The default is 0.
+    --trsave <s>  File to save the results of the training process. The value
+                  <s> must contains one valid path. If this parameter is not
+                  specified the results are not saved. If it is specified, is
+                  created one file for each fold of the cross validation, with 
+                  the same name plus the number of the fold appended at the end.
+                  The files are saved in csv format, with a row for each epoch 
+                  of the training, and in each row there are the average errors
+                  and accuracy for such epoch (see (*)).
+    --folds <n>   Number of folds to divide the dataset for the cross validation 
+                  process. The value <n> must be a positive integer less than 
+                  dataset size. The default value is 10. If set to 1 is not done
+                  validation, and the training is done on entire dataset.
+    --maxfolds <n> Number of folds that are used during the training process to
+                  do validation, one at time, in circular way (like for the 
+                  k-fold validation). The value <n> must be a positive integer 
+                  less than number of folds. The default value is the number of 
+                  folds, in this way is done exactly k-fold cross validation on
+                  all the folds. If set to 1 the training process use only one
+                  fold to do validation (using the others for training),
+                  reducing to simple validation.
+    --maxepochs <n> Max number of epochs for the training process. The value <n> 
+                  must be an integer positive. The default is 0 (that is equals 
+                  to infinite).
+    --shuffle <n> During the training process, the instances of the training set
+                  are reordered in random way every n epochs (only those in the
+                  training set, not those in the validation set that remain the
+                  same). The value n must be a positive integer. If set to 0 
+                  (which is the default) the training set keeps the same order 
+                  on entire training process, if set to 1 change order in every 
+                  epoch.
+    --stoperr <r> Error threshold for the training error in which stop the 
+                  training process; see (*). Default is none. The value <r> must
+                  be a positive real number.
+    --stopacc <r> Value of accuracy in the training set in which stop the 
+                  training process; see (*). Default is none. The value <r> must
+                  be a positive real number in [0,1].
+    --stoperrch <r> If for a certain number of consecutive epochs (default 10)
+                  the training error (see (*)) varies less than the percentage r 
+                  the process is stopped. For example, with --stoperrch 0.1 if 
+                  for 10 consecutive epochs the training error change less than
+                  0.1% the training process is interrupted. To set the number of
+                  consecutive epochs see the follow parameter (--stoperrchep).
+    --stoperrchep <n>  Sets the number n of consecutive epochs after which the
+                  training process is stopped if the error do not change within
+                  a certain threshold (see --stoperrch). If the parameter
+                  --stoperrch is not present than this parameter is ignored.
+    --threshold <r> The value of threshold for the classification. The output 
+                  of the model is considered correct only if is greater than the
+                  threshold and the corresponding output on the dataset is
+                  greater than the threshold or if is less and than also the 
+                  corresponding output in the dataset is less. The value <r> 
+                  must be a real positive number in the range [0,1]. This value
+                  is used to calculate the accuracy. Default is 0.5.
+    --nnsave <s>  File to save the neural network created with the training 
+                  process. The value <s> must contains one valid path. If is set
+                  more than one folds (with --folds) for the training process, 
+                  one neural network is saved for each fold.
+
+Mode test (--mode test)
+    Required parameters:
+    --nnfile <s>  Name of the file with the neural network to test (saved in 
+                  training mode). The value <s> must be a valid path.
+    --dsfile <s>  Name of the file that contains the dataset on which execute
+                  the test. The value <s> must be one valid path. The file must
+                  be in csv format as described above, with a number of inputs 
+                  and of outputs identical to those of the neural network
+                  loaded. If the option --output is not set (see later) the file
+                  may not have the output values.
+    Optional parameters:
+    --output      Flag parameter that indicates if in the dataset there are the
+                  output values. If there aren't the outputs (then this
+                  parameter should not be set) the test only save the responses
+                  of neural network on specified file.
+    --threshold <r> The value of threshold for the classification. The output 
+                  of the model is considered correct only if is greater than the
+                  threshold and the corresponding output on the dataset is
+                  greater than the threshold or if is less and than also the 
+                  corresponding output in the dataset is less. The value <r> 
+                  must be a real positive number in the range [0,1]. This value
+                  is used to calculate the accuracy. Default is 0.5.
+    --tssave <s>  Name of the file on wich save the responses of the neural
+                  network for each instance in the dataset. The responses are
+                  saved in csv format:
+                    id, out[1], ..., out[m] 
+                  where id is the identifier of the instance, out are the
+                  responses of the neural network, and each row corresponds to
+                  one instance of the test set. The value <s> must be one valid
+                  path.
+
+(*) Notes on Error and Accuracy
+    The error is the mean square error, calculated as follows (denoted by E):
+        E := 0;
+        for each element in the dataset:
+          E += (1/2) * Sum( (d(j)-y(j))^2 ) , where d(j) is the j-th output of 
+          the element (in the dataset) and y(j) is the j-th output of the model;
+        E := E / N , where N is the number of element in the dataset;
+    In the training process the dataset is the training set, in the validation 
+    process is the validation set.
+    The accuracy is the number of the elements correctly classified divided by
+    the total number of element in the dataset. Note that if the output is
+    composed of more than one value then the element is considered correctly 
+    classified if each output is correct.
